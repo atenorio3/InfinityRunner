@@ -25,8 +25,7 @@ byte seg_height;	// segment height in metatiles
 byte seg_width;		// segment width in metatiles
 byte seg_char;		// character to draw
 byte seg_palette;	// attribute table value
-// Tracks only the 3 closest floor metasprites to the player
-byte y_values[3];	// collection of max y-values of each floor metasprite
+bool jump_lock; 	// prevents player from jumping infinitely
 
 struct Actor{
   byte x; // Current x-location
@@ -105,10 +104,6 @@ void fill_buffer(byte x) {
     y = PLAYROWS/2-1-i;
     set_metatile(y, seg_char);
     set_attr_entry(x, y, seg_palette);
-    // Record hitboxes of nearby floors
-    if(x > 73 && x < 77 && i == seg_height - 1){
-      y_values[x - 14] = y;
-    }
   }
 }
 
@@ -163,7 +158,6 @@ void scroll_left() {
 
 // Active-game State/Screen
 void active_game_screen() {
-  byte i;
   // Establish Player
   struct Actor player;
   player.x = 75;
@@ -187,12 +181,39 @@ void active_game_screen() {
     split(x_scroll, 0);
     // scroll to the left
     scroll_left();
-    // Check for collision with floor
-    for(i=0; i<3; i++){
-      if(player.y > 173){
-        player.dy = 0;
-        
+    // Player Controls
+    // Sub: D-pad Movement
+    if(pad & PAD_LEFT && player.x > 10){
+      if(pad & PAD_B){ //Spriting
+        player.dx = -3;
       }
+      else{ // Walking
+        player.dx = -2;
+      }
+    }
+    else if(pad & PAD_RIGHT && player.x < 230){
+      if(pad & PAD_B){ //Sprinting
+        player.dx = 3;
+      }
+      else{ // Walking
+        player.dx = 2;
+      }
+    }
+    else{ // 'Standing'
+      player.dx = 0;
+    }
+    // Sub: Jumping
+    if(pad & PAD_A && !jump_lock){
+      player.y -= 45;
+      jump_lock = true;
+    }
+    // Account for gravity
+    if(player.y > 173){ // On the floor...
+      player.dy = 0;
+      jump_lock = false; // Allow for jumping
+    }
+    if(player.y < 173){ // In the air...
+      player.dy = 2;
     }
     // Render player_sprite
     if(player.is_alive){
