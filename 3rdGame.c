@@ -25,6 +25,28 @@ byte seg_height;	// segment height in metatiles
 byte seg_width;		// segment width in metatiles
 byte seg_char;		// character to draw
 byte seg_palette;	// attribute table value
+// Tracks only the 3 closest floor metasprites to the player
+byte y_values[3];	// collection of max y-values of each floor metasprite
+
+struct Actor{
+  byte x; // Current x-location
+  byte y; // Current y-location
+  sbyte dx; // Delta-x
+  sbyte dy; // Delta-y
+  bool is_alive; // Is the actor supposed to be 'alive' right now?
+};
+
+// Metasprite Stuff
+// define a 2x2 metasprite
+#define DEF_METASPRITE_2x2(name,code,pal)\
+const unsigned char name[]={\
+        0,      0,      (code)+0,   pal, \
+        0,      8,      (code)+1,   pal, \
+        8,      0,      (code)+2,   pal, \
+        8,      8,      (code)+3,   pal, \
+        128};
+
+DEF_METASPRITE_2x2(player_sprite, 0xd8, 0); // $05
 
 // number of rows in scrolling playfield (without status bar)
 #define PLAYROWS 24
@@ -48,7 +70,7 @@ word nt2attraddr(word a) {
 void new_segment() {
   seg_height = 2;
   seg_width = (rand8() & 3) + 1;
-  seg_palette = rand8() & 3;
+  seg_palette = 3;
   seg_char = 0xf4;
 }
 
@@ -78,13 +100,15 @@ void fill_buffer(byte x) {
   // clear nametable buffers
   memset(ntbuf1, 0, sizeof(ntbuf1));
   memset(ntbuf2, 0, sizeof(ntbuf2));
-  // draw a random star
-  ntbuf1[rand8() & 15] = '.';
   // draw segment slice to both nametable buffers
   for (i=0; i<seg_height; i++) {
     y = PLAYROWS/2-1-i;
     set_metatile(y, seg_char);
     set_attr_entry(x, y, seg_palette);
+    // Record hitboxes of nearby floors
+    if(x > 73 && x < 77 && i == seg_height - 1){
+      y_values[x - 14] = y;
+    }
   }
 }
 
@@ -113,14 +137,9 @@ void update_offscreen() {
     addr = NTADR_A(x, 4);
   else
     addr = NTADR_B(x&31, 4);
-  // draw vertical slice from ntbuf arrays to name table
-  // starting with leftmost slice
+
   vrambuf_put(addr | VRAMBUF_VERT, ntbuf1, PLAYROWS);
-  // then the rightmost slice
   vrambuf_put((addr+1) | VRAMBUF_VERT, ntbuf2, PLAYROWS);
-  // compute attribute table address
-  // then set attribute table entries
-  // we update these twice to prevent right-side artifacts
   put_attr_entries(nt2attraddr(addr));
   // every 4 columns, clear attribute table buffer
   if ((x & 3) == 2) {
@@ -139,25 +158,28 @@ void scroll_left() {
     update_offscreen();
   }
   // increment x_scroll
-  ++x_scroll;
+  x_scroll += 2;
 }
 
-// function to write a string into the name table
-//   adr = start address in name table
-//   str = pointer to string
-void put_str(unsigned int adr, const char *str) {
-  vram_adr(adr);        // set PPU read/write address
-  vram_write(str, strlen(str)); // write bytes to PPU
-}
-
-// main loop, scrolls left continuously
+// Active-game State/Screen
 void active_game_screen() {
-   put_str(NTADR_A(7,15),"Let's Start Running!");
+  byte i;
+  // Establish Player
+  struct Actor player;
+  player.x = 75;
+  player.y = 1;
+  player.dx = 0;
+  player.dy = 2; // Player will 'fall' onto the floor.
+  player.is_alive = true;
+  
   // get data for initial segment
   new_segment();
   x_scroll = 0;
   // infinite loop
   while (1) {
+    char pad = pad_poll(0);
+    char oam_id = 0;
+    
     // ensure VRAM buffer is cleared
     ppu_wait_nmi();
     vrambuf_clear();
@@ -165,20 +187,33 @@ void active_game_screen() {
     split(x_scroll, 0);
     // scroll to the left
     scroll_left();
+    // Check for collision with floor
+    for(i=0; i<3; i++){
+      if(player.y > 173){
+        player.dy = 0;
+        
+      }
+    }
+    // Render player_sprite
+    if(player.is_alive){
+      player.x += player.dx;
+      player.y += player.dy;
+      oam_id = oam_meta_spr(player.x, player.y, oam_id, player_sprite);
+    }
   }
 }
 
 /*{pal:"nes",layout:"nes"}*/
 const char PALETTE[32] = { 
-  0x03,			// background color
+  0x00,			// background color
 
-  0x25,0x30,0x27,0x00,	// ladders and pickups
-  0x1C,0x20,0x2C,0x00,	// floor blocks
+  0xff,0x30,0xff,0x00,	
+  0x1C,0x20,0x2C,0x00,	
   0x00,0x10,0x20,0x00,
   0x06,0x16,0x26,0x00,
 
   0x16,0x35,0x24,0x00,	// enemy sprites
-  0x00,0x37,0x25,0x00,	// rescue person
+  0x00,0x37,0x25,0x00,	
   0x0D,0x2D,0x1A,0x00,
   0x0D,0x27,0x2A	// player sprites
 };
