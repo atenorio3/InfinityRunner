@@ -12,6 +12,16 @@ Offscreen Scrolling from the examples.
 // 1 = vertical mirroring
 #define NES_MIRRORING 1
 
+// Music Code
+void __fastcall__ famitone_update(void);
+//#link "famitone2.s"
+//#link "RunnerTheme.s"
+extern char RunnerTheme[];
+//#link "BulletTrap.s"
+extern char BulletTrap[];
+//#link "SpikeTrap.s"
+extern char SpikeTrap[];
+
 // VRAM update buffer
 #include "vrambuf.h"
 //#link "vrambuf.c"
@@ -263,6 +273,14 @@ void setup_graphics(){
 void main(void) {
   setup_graphics();
 
+  // Initialize Music
+  famitone_init(RunnerTheme);
+  nmi_set_callback(famitone_update);
+  music_play(0);
+  
+  // Pre-Check with Enter
+  // music_stop();
+  
   // 'Active-game' Screen
   active_game_screen();
 }
