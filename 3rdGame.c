@@ -17,6 +17,8 @@ void __fastcall__ famitone_update(void);
 //#link "famitone2.s"
 //#link "RunnerTheme.s"
 extern char RunnerTheme[];
+//#link "PauseBeep.s"
+extern char PauseBeep[];
 //#link "BulletTrap.s"
 extern char BulletTrap[];
 //#link "SpikeTrap.s"
