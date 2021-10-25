@@ -4,7 +4,8 @@ Credit: Base Code is from Offscreen Scrolling Example
 This is essentially a heavily modded version of
 Offscreen Scrolling from the examples.
 */
-
+#include <stdio.h>
+#include <stdlib.h>
 #include "neslib.h"
 #include <string.h>
 
@@ -58,6 +59,7 @@ const unsigned char name[]={\
         128};
 
 DEF_METASPRITE_2x2(player_sprite, 0xd8, 0); // $05
+DEF_METASPRITE_2x2(spike_sprite, 0xd4, 0);
 
 // number of rows in scrolling playfield (without status bar)
 #define PLAYROWS 24
@@ -77,10 +79,10 @@ word nt2attraddr(word a) {
     ((a >> 4) & 0x38) | ((a >> 2) & 0x07);
 }
 
-// generate new random segment
+
 void new_segment() {
   seg_height = 2;
-  seg_width = (rand8() & 3) + 1;
+  seg_width = 4;
   seg_palette = 3;
   seg_char = 0xf4;
 }
@@ -170,13 +172,26 @@ void scroll_left() {
 
 // Active-game State/Screen
 void active_game_screen() {
-  // Establish Player
+  // Control number of spikes and bullets
+  byte i;
+  byte max_spikes;
+  byte current_spikes;
+  
+  // Establish Actors
   struct Actor player;
-  player.x = 75;
+  struct Actor spikes[5]; // Max number supported is 5.
+  
+  // Establish number of spikes and bullets to use
+  max_spikes = 3;
+  current_spikes = 0;
+  
+  // Prepare player
+  player.x = 150;
   player.y = 1;
   player.dx = 0;
-  player.dy = 2; // Player will 'fall' onto the floor.
+  player.dy = 1;  // Player will 'fall' onto the floor.
   player.is_alive = true;
+
   
   // get data for initial segment
   new_segment();
@@ -193,6 +208,34 @@ void active_game_screen() {
     split(x_scroll, 0);
     // scroll to the left
     scroll_left();
+    
+    // Despawning Rules for Spikes
+    if(current_spikes > 0){ // At least 1 spike has to be active.
+      for(i = 0; i < max_spikes; i++){
+        if(spikes[i].is_alive && spikes[i].x < 5){
+          spikes[i].is_alive = false;
+          current_spikes--;
+          oam_clear();
+        }
+      }
+    }
+    
+    // Spawning Rules for Spikes
+    if(current_spikes < max_spikes){ // If we're allowed to spawn another spike...
+      if(rand8() % 20 == 0){ // 5% spawn rate per frame; Activate a spike on success.
+        for(i = 0; i < max_spikes; i++){ // Check for a free space among the spikes
+          if(!spikes[i].is_alive){ // Take the first space found
+            spikes[i].x = 240;
+            spikes[i].y = 175;
+            spikes[i].dx = -2;
+            spikes[i].is_alive = true;
+            current_spikes++; // Increment current number of spikes
+            break;
+          }
+        }
+      }
+    }
+    
     // Player Controls
     // Sub: D-pad Movement
     if(pad & PAD_LEFT && player.x > 10){
@@ -217,21 +260,52 @@ void active_game_screen() {
     // Sub: Jumping
     if(pad & PAD_A && !jump_lock){
       player.y -= 45;
+      player.dy = -4;
       jump_lock = true;
     }
     // Account for gravity
-    if(player.y > 173){ // On the floor...
+    if(player.y > 173){ // Landing on the floor...
       player.dy = 0;
       jump_lock = false; // Allow for jumping
     }
-    if(player.y < 173){ // In the air...
-      player.dy = 2;
+    if(player.y < 173 && player.dy < 3){ // In the air...; with a terminal velocity
+      if(!jump_lock){
+        player.dy = 2;
+      }
+      else{
+        player.dy += 1;
+      }
     }
+    // Render active spikes
+    for(i = 0; i < max_spikes; i++){
+      if(spikes[i].is_alive){
+        spikes[i].x += spikes[i].dx;
+      	oam_id = oam_meta_spr(spikes[i].x, spikes[i].y, oam_id, spike_sprite);
+      }
+    }
+    
+    // Check for player collision with...
+    // Sub: Spikes
+    for(i = 0; i < max_spikes; i++){
+      if(spikes[i].is_alive){
+        if(abs(spikes[i].x - player.x) < 9 && abs(spikes[i].y - player.y) < 9){
+          player.is_alive = false; // Player dies
+          music_stop();
+          sfx_init(SpikeTrap);
+          sfx_play(0,0);
+        }
+      }
+    }
+
     // Render player_sprite
     if(player.is_alive){
       player.x += player.dx;
       player.y += player.dy;
       oam_id = oam_meta_spr(player.x, player.y, oam_id, player_sprite);
+    }
+    else{ // If the player is dead, leave the main screen.
+      delay(28);
+      break;
     }
   }
 }
@@ -303,6 +377,8 @@ void setup_graphics(){
 // main function, run after console reset
 void main(void) {
   setup_graphics();
+  
+  // Note: Intro-Screen Goes Here
 
   // Initialize Music
   famitone_init(RunnerTheme);
@@ -327,4 +403,7 @@ void main(void) {
   
   // 'Active-game' Screen
   active_game_screen();
+  
+  // Note: Game-Over Screen Goes here
+  while(1){}; // Placeholder
 }
