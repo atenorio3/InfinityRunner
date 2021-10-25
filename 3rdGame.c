@@ -312,6 +312,19 @@ void main(void) {
   // Pre-Check with Enter
   // music_stop();
   
+  // Start with Main Menu
+  // show_screen(titlescreen_pal, titlescreen_rle); 
+  /*while(1){
+    char pad = pad_poll(0);
+  	if(pad & PAD_START){
+          
+          break;
+        }
+  }*/
+  
+  // Swap to Background
+  // show_screen(background_pal, background_rle);
+  
   // 'Active-game' Screen
   active_game_screen();
 }
