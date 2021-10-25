@@ -60,6 +60,8 @@ const unsigned char name[]={\
 
 DEF_METASPRITE_2x2(player_sprite, 0xd8, 0); // $05
 DEF_METASPRITE_2x2(spike_sprite, 0xd4, 0);
+DEF_METASPRITE_2x2(bullet_sprite, 0xf8, 0);
+
 
 // number of rows in scrolling playfield (without status bar)
 #define PLAYROWS 24
@@ -180,6 +182,7 @@ void active_game_screen() {
   // Establish Actors
   struct Actor player;
   struct Actor spikes[5]; // Max number supported is 5.
+  struct Actor Bullet; 
   
   // Establish number of spikes and bullets to use
   max_spikes = 3;
@@ -191,7 +194,9 @@ void active_game_screen() {
   player.dx = 0;
   player.dy = 1;  // Player will 'fall' onto the floor.
   player.is_alive = true;
-
+  
+  // Prepare Bullet
+  Bullet.is_alive = false;
   
   // get data for initial segment
   new_segment();
@@ -236,6 +241,24 @@ void active_game_screen() {
       }
     }
     
+    // Spawning Rules for Bullet
+    if(!Bullet.is_alive){ // If bullet is not active...
+      if(rand8() % 50 == 0){
+        sfx_init(BulletTrap);
+        sfx_play(0,0);
+        Bullet.x = 240;
+        Bullet.y = 150;
+        Bullet.dx = -3;
+        Bullet.is_alive = true;
+      }
+    }
+    
+    // Despawning Rule for Bullet
+    if(Bullet.is_alive && Bullet.x < 5){
+      Bullet.is_alive = false;
+      oam_clear();
+    }
+    
     // Player Controls
     // Sub: D-pad Movement
     if(pad & PAD_LEFT && player.x > 10){
@@ -259,8 +282,8 @@ void active_game_screen() {
     }
     // Sub: Jumping
     if(pad & PAD_A && !jump_lock){
-      player.y -= 45;
-      player.dy = -4;
+      player.y -= 5;
+      player.dy = -8;
       jump_lock = true;
     }
     // Account for gravity
@@ -276,6 +299,7 @@ void active_game_screen() {
         player.dy += 1;
       }
     }
+    
     // Render active spikes
     for(i = 0; i < max_spikes; i++){
       if(spikes[i].is_alive){
@@ -283,6 +307,17 @@ void active_game_screen() {
       	oam_id = oam_meta_spr(spikes[i].x, spikes[i].y, oam_id, spike_sprite);
       }
     }
+    
+    // Render active bullet
+    if(Bullet.is_alive){
+      Bullet.x += Bullet.dx;
+      oam_id = oam_meta_spr(Bullet.x, Bullet.y, oam_id, bullet_sprite);
+    }
+    
+    // Render player_sprite
+    player.x += player.dx;
+    player.y += player.dy;
+    oam_id = oam_meta_spr(player.x, player.y, oam_id, player_sprite);
     
     // Check for player collision with...
     // Sub: Spikes
@@ -296,14 +331,18 @@ void active_game_screen() {
         }
       }
     }
-
-    // Render player_sprite
-    if(player.is_alive){
-      player.x += player.dx;
-      player.y += player.dy;
-      oam_id = oam_meta_spr(player.x, player.y, oam_id, player_sprite);
+    // Sub: Bullet
+    if(Bullet.is_alive){
+      if(abs(Bullet.x - player.x) < 11 && abs(Bullet.y - player.y) < 13){
+        player.is_alive = false; // Player dies
+        music_stop();
+        sfx_init(SpikeTrap);
+        sfx_play(0,0);
+      }
     }
-    else{ // If the player is dead, leave the main screen.
+
+    // If the player dies, exit the active-game screen.
+    if(!player.is_alive){
       delay(28);
       break;
     }
