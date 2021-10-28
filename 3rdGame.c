@@ -58,10 +58,20 @@ const unsigned char name[]={\
         8,      8,      (code)+3,   pal, \
         128};
 
-DEF_METASPRITE_2x2(player_sprite, 0xd8, 0); // $05
+DEF_METASPRITE_2x2(player_sprite, 0xd8, 0); // $05 (Stand)
+DEF_METASPRITE_2x2(playerRRun1, 0xdc, 0);
+DEF_METASPRITE_2x2(playerRRun2, 0xe0, 0);
+DEF_METASPRITE_2x2(playerRRun3, 0xe4, 0);
+DEF_METASPRITE_2x2(playerRJump, 0xe8, 0);
+
 DEF_METASPRITE_2x2(spike_sprite, 0xd4, 0);
 DEF_METASPRITE_2x2(bullet_sprite, 0xf8, 0);
 
+const unsigned char* const playerRunSeq[9] = {
+  playerRRun1, playerRRun2, playerRRun3, 
+  playerRRun1, playerRRun2, playerRRun3, 
+  playerRRun1, playerRRun2,
+};
 
 // number of rows in scrolling playfield (without status bar)
 #define PLAYROWS 24
@@ -72,6 +82,9 @@ char ntbuf2[PLAYROWS];	// right side
 
 // a vertical slice of attribute table entries
 char attrbuf[PLAYROWS/4];
+
+// score (BCD)
+// static byte score = 0;
 
 /// FUNCTIONS
 
@@ -319,6 +332,16 @@ void active_game_screen() {
     player.y += player.dy;
     oam_id = oam_meta_spr(player.x, player.y, oam_id, player_sprite);
     
+    // player_sprite (Stand)
+    
+    // byte counter = 0;
+    // playerRunSeq[counter]
+    /*counter++;
+    if(counter = 10){
+    	counter = 0;
+    }*/
+    // oam_clear();
+    
     // Check for player collision with...
     // Sub: Spikes
     for(i = 0; i < max_spikes; i++){
@@ -377,6 +400,12 @@ void show_screen(const byte* pal, const byte* rle) {
   ppu_on_all();
   fade_in();
 }
+
+// draw the scoreboard, right now just two digits
+/*void draw_scoreboard() {
+  oam_off = oam_spr(24+0, 24, '0'+(score >> 4), 2, oam_off);
+  oam_off = oam_spr(24+8, 24, '0'+(score & 0xf), 2, oam_off);
+}*/
 
 /*{pal:"nes",layout:"nes"}*/
 const char PALETTE[32] = { 
@@ -440,9 +469,16 @@ void main(void) {
   // Swap to Background
   // show_screen(background_pal, background_rle);
   
+  /*byte runseq = actor_x[i] & 7;
+  if (actor_dx[i] >= 0)
+    runseq += 8;*/
+  
   // 'Active-game' Screen
   active_game_screen();
   
+  // draw scoreboard
+  // draw_scoreboard();
+   
   // Note: Game-Over Screen Goes here
   while(1){}; // Placeholder
 }
