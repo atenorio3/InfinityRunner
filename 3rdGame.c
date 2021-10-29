@@ -1,4 +1,5 @@
 
+
 /*
 Credit: Base Code is from Offscreen Scrolling Example
 This is essentially a heavily modded version of
@@ -8,6 +9,7 @@ Offscreen Scrolling from the examples.
 #include <stdlib.h>
 #include "neslib.h"
 #include <string.h>
+
 
 // 0 = horizontal mirroring
 // 1 = vertical mirroring
@@ -23,7 +25,11 @@ extern char PauseBeep[];
 //#link "BulletTrap.s"
 extern char BulletTrap[];
 //#link "SpikeTrap.s"
+//#link "infiniteTitle.s"
 extern char SpikeTrap[];
+
+extern const byte infiniteTitle_pal[16];
+extern const byte infiniteTitle_rle[];
 
 // VRAM update buffer
 #include "vrambuf.h"
@@ -409,9 +415,9 @@ void show_screen(const byte* pal, const byte* rle) {
 
 /*{pal:"nes",layout:"nes"}*/
 const char PALETTE[32] = { 
-  0x00,			// background color
+  0x04,			// background color
 
-  0x3F,0x37,0x30,0x00,	
+  0x15,0x37,0x30,0x00,	
   0x1C,0x20,0x2C,0x00,	
   0x00,0x10,0x20,0x00,
   0x06,0x16,0x26,0x00,
@@ -457,14 +463,14 @@ void main(void) {
   // music_stop();
   
   // Start with Main Menu
-  // show_screen(titlescreen_pal, titlescreen_rle); 
-  /*while(1){
+ show_screen(infiniteTitle_pal, infiniteTitle_rle); 
+  while(1){
     char pad = pad_poll(0);
   	if(pad & PAD_START){
           
           break;
         }
-  }*/
+  }
   
   // Swap to Background
   // show_screen(background_pal, background_rle);
