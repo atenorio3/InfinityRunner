@@ -484,7 +484,11 @@ void main(void) {
   
   // draw scoreboard
   // draw_scoreboard();
-   
+  // ppu_off();
+  
   // Note: Game-Over Screen Goes here
+  // write text to name table
+  vram_adr(NTADR_A(11,2));		// set address
+  vram_write("Game Over!", 10);	// write bytes to video RAM
   while(1){}; // Placeholder
 }
