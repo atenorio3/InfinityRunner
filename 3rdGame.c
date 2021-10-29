@@ -74,10 +74,8 @@ DEF_METASPRITE_2x2(playerRJump, 0xe8, 0);
 DEF_METASPRITE_2x2(spike_sprite, 0xd4, 0);
 DEF_METASPRITE_2x2(bullet_sprite, 0xf8, 0);
 
-const unsigned char* const playerRunSeq[9] = {
+const unsigned char* const playerRunSeq[3] = {
   playerRRun1, playerRRun2, playerRRun3, 
-  playerRRun1, playerRRun2, playerRRun3, 
-  playerRRun1, playerRRun2,
 };
 
 // number of rows in scrolling playfield (without status bar)
@@ -198,6 +196,9 @@ void active_game_screen() {
   byte i;
   byte max_spikes;
   byte current_spikes;
+  byte sprite_counter;
+  bool sprite_lock1;
+  bool sprite_lock2;
   
   // Establish Actors
   struct Actor player;
@@ -214,6 +215,10 @@ void active_game_screen() {
   player.dx = 0;
   player.dy = 1;  // Player will 'fall' onto the floor.
   player.is_alive = true;
+  sprite_counter = 0;
+  sprite_lock1 = true;
+  sprite_lock2 = true;
+  
   
   // Prepare Bullet
   Bullet.is_alive = false;
@@ -337,23 +342,30 @@ void active_game_screen() {
     // Render player_sprite
     player.x += player.dx;
     player.y += player.dy;
-    oam_id = oam_meta_spr(player.x, player.y, oam_id, player_sprite);
+    oam_id = oam_meta_spr(player.x, player.y, oam_id, playerRunSeq[sprite_counter]);
     
-    // player_sprite (Stand)
+    if(sprite_lock2){
+      sprite_lock1 = false;
+      sprite_lock2 = false;
+      sprite_counter++;
+    }
     
-    // byte counter = 0;
-    // playerRunSeq[counter]
-    /*counter++;
-    if(counter = 10){
-    	counter = 0;
-    }*/
-    // oam_clear();
+    if(sprite_lock1){
+      sprite_lock2 = true;
+    }
+    else{
+      sprite_lock1 = true;
+    }
+    if(sprite_counter > 2){
+      sprite_counter = 0;
+    }
+    
     
     // Check for player collision with...
     // Sub: Spikes
     for(i = 0; i < max_spikes; i++){
       if(spikes[i].is_alive){
-        if(abs(spikes[i].x - player.x) < 9 && abs(spikes[i].y - player.y) < 9){
+        if(abs(spikes[i].x - player.x) < 10 && abs(spikes[i].y - player.y) < 9){
           player.is_alive = false; // Player dies
           music_stop();
           sfx_init(SpikeTrap);
@@ -466,8 +478,7 @@ void main(void) {
   show_screen(infiniteTitle_pal, infiniteTitle_rle); 
   while(1){
     char pad = pad_poll(0);
-  	if(pad & PAD_START){
-          
+  	if(pad & PAD_START){ 
           break;
         }
   }
