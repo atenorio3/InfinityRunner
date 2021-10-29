@@ -344,6 +344,7 @@ void active_game_screen() {
     player.y += player.dy;
     oam_id = oam_meta_spr(player.x, player.y, oam_id, playerRunSeq[sprite_counter]);
     
+    // Sprite Locks to Slow Down Animations
     if(sprite_lock2){
       sprite_lock1 = false;
       sprite_lock2 = false;
