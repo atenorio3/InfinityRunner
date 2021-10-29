@@ -206,7 +206,7 @@ void active_game_screen() {
   struct Actor Bullet; 
   
   // Establish number of spikes and bullets to use
-  max_spikes = 3;
+  max_spikes = 2;
   current_spikes = 0;
   
   // Prepare player
@@ -376,7 +376,7 @@ void active_game_screen() {
     }
     // Sub: Bullet
     if(Bullet.is_alive){
-      if(abs(Bullet.x - player.x) < 11 && abs(Bullet.y - player.y) < 13){
+      if(abs(Bullet.x - player.x) < 10 && abs(Bullet.y - player.y) < 13){
         player.is_alive = false; // Player dies
         music_stop();
         sfx_init(SpikeTrap);
