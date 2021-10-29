@@ -10,6 +10,8 @@ Offscreen Scrolling from the examples.
 #include "neslib.h"
 #include <string.h>
 
+//#link "infiniteBackground.s"
+
 
 // 0 = horizontal mirroring
 // 1 = vertical mirroring
@@ -30,6 +32,8 @@ extern char SpikeTrap[];
 
 extern const byte infiniteTitle_pal[16];
 extern const byte infiniteTitle_rle[];
+extern const byte infiniteBackground_pal[16];
+extern const byte infiniteBackground_rle[];
 
 // VRAM update buffer
 #include "vrambuf.h"
@@ -473,7 +477,7 @@ void main(void) {
   }
   
   // Swap to Background
-  // show_screen(background_pal, background_rle);
+  show_screen(infiniteBackground_pal, infiniteBackground_rle);
   
   /*byte runseq = actor_x[i] & 7;
   if (actor_dx[i] >= 0)
