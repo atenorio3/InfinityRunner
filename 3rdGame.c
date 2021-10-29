@@ -1,5 +1,3 @@
-
-
 /*
 Credit: Base Code is from Offscreen Scrolling Example
 This is essentially a heavily modded version of
@@ -9,9 +7,6 @@ Offscreen Scrolling from the examples.
 #include <stdlib.h>
 #include "neslib.h"
 #include <string.h>
-
-//#link "infiniteBackground.s"
-
 
 // 0 = horizontal mirroring
 // 1 = vertical mirroring
@@ -27,17 +22,19 @@ extern char PauseBeep[];
 //#link "BulletTrap.s"
 extern char BulletTrap[];
 //#link "SpikeTrap.s"
-//#link "infiniteTitle.s"
 extern char SpikeTrap[];
+
+// VRAM update buffer
+#include "vrambuf.h"
+//#link "vrambuf.c"
 
 extern const byte infiniteTitle_pal[16];
 extern const byte infiniteTitle_rle[];
 extern const byte infiniteBackground_pal[16];
 extern const byte infiniteBackground_rle[];
+//#link "infiniteTitle.s"
+//#link "infiniteBackground.s"
 
-// VRAM update buffer
-#include "vrambuf.h"
-//#link "vrambuf.c"
 
 // link the pattern table into CHR ROM
 //#link "chr_generic.s"
@@ -456,8 +453,6 @@ void setup_graphics(){
 void main(void) {
   setup_graphics();
   
-  // Note: Intro-Screen Goes Here
-
   // Initialize Music
   famitone_init(RunnerTheme);
   nmi_set_callback(famitone_update);
@@ -466,8 +461,9 @@ void main(void) {
   // Pre-Check with Enter
   // music_stop();
   
+  // Note: Intro-Screen Goes Here
   // Start with Main Menu
- show_screen(infiniteTitle_pal, infiniteTitle_rle); 
+  show_screen(infiniteTitle_pal, infiniteTitle_rle); 
   while(1){
     char pad = pad_poll(0);
   	if(pad & PAD_START){
