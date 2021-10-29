@@ -46,6 +46,7 @@ byte seg_width;		// segment width in metatiles
 byte seg_char;		// character to draw
 byte seg_palette;	// attribute table value
 bool jump_lock; 	// prevents player from jumping infinitely
+static byte score = 0;	// score (BCD) [DeathCount, Coins, or etc]
 
 struct Actor{
   byte x; // Current x-location
@@ -87,9 +88,6 @@ char ntbuf2[PLAYROWS];	// right side
 
 // a vertical slice of attribute table entries
 char attrbuf[PLAYROWS/4];
-
-// score (BCD)
-// static byte score = 0;
 
 /// FUNCTIONS
 
@@ -217,8 +215,7 @@ void active_game_screen() {
   player.is_alive = true;
   sprite_counter = 0;
   sprite_lock1 = true;
-  sprite_lock2 = true;
-  
+  sprite_lock2 = true; 
   
   // Prepare Bullet
   Bullet.is_alive = false;
@@ -386,6 +383,7 @@ void active_game_screen() {
 
     // If the player dies, exit the active-game screen.
     if(!player.is_alive){
+      // score++;		// DeathCounter?
       delay(28);
       break;
     }
@@ -421,11 +419,13 @@ void show_screen(const byte* pal, const byte* rle) {
   fade_in();
 }
 
-// draw the scoreboard, right now just two digits
-/*void draw_scoreboard() {
+// Draw the scoreboard, right now just two digits
+void draw_scoreboard() {
   oam_off = oam_spr(24+0, 24, '0'+(score >> 4), 2, oam_off);
   oam_off = oam_spr(24+8, 24, '0'+(score & 0xf), 2, oam_off);
-}*/
+  
+  // (score >> 4) & (score & 0xf)
+}
 
 /*{pal:"nes",layout:"nes"}*/
 const char PALETTE[32] = { 
@@ -486,7 +486,8 @@ void main(void) {
   
   // Swap to Background
   show_screen(infiniteBackground_pal, infiniteBackground_rle);
-  
+
+  // Sprite_Animation Example from Book
   /*byte runseq = actor_x[i] & 7;
   if (actor_dx[i] >= 0)
     runseq += 8;*/
@@ -494,7 +495,7 @@ void main(void) {
   // 'Active-game' Screen
   active_game_screen();
   
-  // draw scoreboard
+  // Draw scoreboard
   // draw_scoreboard();
   // ppu_off();
   
